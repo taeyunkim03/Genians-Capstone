@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network Access Readiness Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a corporate security-vendor page. Dark navy hero, white question section with a pinned navy score card, light grey report band. Single light theme, matching the reference site. */
+:root {
+  --green: #78be20;
+  --green-dark: #4f8a12;
+  --green-tint: #f1f8e8;
+  --navy: #042031;
+  --navy-bar: #00263e;
+  --navy-2: #0b2e44;
+  --ink: #333333;
+  --ink-strong: #000c13;
+  --muted: #63666a;
+  --hero-sub: #c7c7c7;
+  --grey-band: #f5f5f5;
+  --card: #f7f7f4;
+  --line: #e2e3e0;
+  --good: #4f8a12;
+  --warn: #b7770a;
+  --crit: #c93c3c;
+  --good-soft: #eaf5dc;
+  --warn-soft: #fbf0d9;
+  --crit-soft: #fbe5e3;
+  --font: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: #ffffff; color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+a { color: var(--green-dark); }
+h1, h2, h3 { font-family: var(--font); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+.tnum { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 18px; font-weight: 500; color: var(--green); text-transform: uppercase; letter-spacing: 0.01em; }
+.h2 { font-size: clamp(32px, 4vw, 50px); font-weight: 400; line-height: 1.15; color: var(--ink); }
+
+/* Prototype bar and header */
+.utility { background: var(--navy-bar); color: #ffffff; font-size: 13px; }
+.utility .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 7px; padding-bottom: 7px; flex-wrap: wrap; }
+.proto-tag { display: inline-flex; align-items: center; gap: 8px; }
+.proto-tag b { background: var(--green); color: #ffffff; border-radius: 50px; padding: 1px 10px; font-weight: 600; font-size: 12px; letter-spacing: 0.03em; }
+.site-head { background: #ffffff; border-bottom: 1px solid var(--line); }
+.site-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 18px; padding-bottom: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 24px; color: var(--ink); letter-spacing: -0.01em; }
+.brand svg { width: 32px; height: 32px; }
+.nav { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.nav span { color: var(--green); font-weight: 500; font-size: 16px; }
+.btn { font: inherit; font-weight: 500; font-size: 16px; border-radius: 50px; padding: 15px 27px; cursor: pointer; border: 0; background: var(--green); color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; line-height: 1.2; transition: background .15s; }
+.btn:hover { background: #69a81b; }
+.btn-sm { padding: 10px 20px; font-size: 15px; }
+.btn-line { background: transparent; color: var(--green-dark); box-shadow: inset 0 0 0 2px var(--green); }
+.btn-line:hover { background: var(--green-tint); }
+.btn-on-dark.btn-line { color: #ffffff; }
+.btn-on-dark.btn-line:hover { background: rgba(120, 190, 32, 0.15); }
+.btn:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+
+/* Hero */
+.hero { background: var(--navy); color: #ffffff; padding: 72px 0 76px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+.hero h1 { font-size: clamp(34px, 4.6vw, 54px); font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; margin-top: 14px; max-width: 18ch; }
+.hero .lead { color: var(--hero-sub); font-size: 18px; margin-top: 20px; max-width: 58ch; }
+.hero .cta { margin-top: 30px; display: flex; gap: 14px; flex-wrap: wrap; }
+.stats { display: grid; gap: 22px; }
+.stat { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; border-bottom: 1px solid rgba(255, 255, 255, 0.14); padding-bottom: 16px; }
+.stat:last-child { border-bottom: 0; padding-bottom: 0; }
+.stat b { font-size: 44px; font-weight: 300; color: var(--green); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--hero-sub); font-size: 16px; }
+
+/* Questions section */
+.section { padding: 80px 0; }
+.section-head { display: grid; gap: 10px; margin-bottom: 40px; max-width: 760px; }
+.section-head p { color: var(--muted); font-size: 18px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; align-items: start; }
+.questions { display: grid; gap: 44px; min-width: 0; }
+.area { display: grid; gap: 16px; }
+.area-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--green); }
+.area-head .num { font-size: 15px; font-weight: 600; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.04em; }
+.area-head h2 { font-size: 26px; font-weight: 500; color: var(--ink); }
+
+fieldset.q { margin: 0; border: 0; border-radius: 16px; background: var(--card); padding: 22px 24px 24px; min-width: 0; }
+fieldset.q legend { padding: 0; font-weight: 600; font-size: 18px; color: var(--ink-strong); float: left; width: 100%; line-height: 1.4; }
+fieldset.q legend .qn { display: inline-block; min-width: 2.2em; font-weight: 500; color: var(--green-dark); font-variant-numeric: tabular-nums; }
+.q .hint { clear: both; font-size: 15px; color: var(--muted); padding-top: 4px; }
+.opts { clear: both; display: grid; gap: 10px; margin-top: 16px; }
+.opt { position: relative; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; cursor: pointer; background: #ffffff; transition: border-color .15s, background .15s; }
+.opt:hover { border-color: var(--green); }
+.opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.dot { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; border: 2px solid #a7aaa4; display: grid; place-items: center; background: #ffffff; }
+.opt input:checked ~ .dot { border-color: var(--green); background: var(--green); }
+.opt input:checked ~ .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; }
+.opt:has(input:checked) { border-color: var(--green); background: var(--green-tint); }
+.opt input:focus-visible ~ .dot { outline: 3px solid var(--green); outline-offset: 2px; }
+
+/* Score card, navy like the reference site's dark bands */
+.card {
+  position: sticky; top: 20px; background: var(--navy); color: #ffffff; border-radius: 20px; padding: 26px; display: grid; gap: 20px;
+  --good: #8fd14f; --warn: #f2b33d; --crit: #ff7a6e;
+  --good-soft: rgba(143, 209, 79, 0.16); --warn-soft: rgba(242, 179, 61, 0.16); --crit-soft: rgba(255, 122, 110, 0.16);
+}
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-head h2 { font-size: 18px; font-weight: 500; color: #ffffff; }
+.pill { display: inline-flex; align-items: center; border-radius: 50px; padding: 3px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.pill-example { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+.pill-live { background: var(--green); color: #ffffff; }
+.score { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.score-num { font-weight: 300; font-size: 72px; line-height: 0.85; color: var(--green); font-variant-numeric: tabular-nums; }
+.score-of { color: var(--hero-sub); font-size: 16px; padding-bottom: 6px; }
+.band { margin-left: auto; }
+.band-good { background: var(--good-soft); color: var(--good); }
+.band-warn { background: var(--warn-soft); color: var(--warn); }
+.band-crit { background: var(--crit-soft); color: var(--crit); }
+.basis { font-size: 14px; color: var(--hero-sub); margin-top: -8px; }
+.areas { display: grid; gap: 12px; }
+.arow { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 15px; }
+.arow .aval { font-size: 14px; color: var(--hero-sub); font-variant-numeric: tabular-nums; }
+.bar { grid-column: 1 / -1; height: 8px; border-radius: 50px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.bar > span { display: block; height: 100%; border-radius: 50px; transition: width .3s; }
+.topgaps { display: grid; gap: 8px; border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: 16px; }
+.topgaps h3 { font-size: 14px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 0.04em; }
+.topgaps ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; color: #e8ecee; }
+.card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Report band */
+.report { background: var(--grey-band); padding: 80px 0; }
+.report .section-head { margin-bottom: 32px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 36px; align-items: start; }
+.gaps { display: grid; gap: 14px; }
+.gap { background: #ffffff; border-radius: 16px; border-left: 6px solid var(--line); padding: 20px 22px; display: grid; gap: 10px; }
+.gap.crit { border-left-color: var(--crit); }
+.gap.warn { border-left-color: var(--warn); }
+.gap-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.gap-top h3 { font-size: 19px; font-weight: 600; color: var(--ink-strong); }
+.gap .why { font-size: 16px; max-width: 66ch; }
+.refs { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.refs .rid { font-weight: 600; color: var(--green-dark); margin-right: 6px; }
+.empty { background: #ffffff; border-radius: 16px; padding: 20px; color: var(--muted); font-size: 16px; }
+
+.side { display: grid; gap: 20px; }
+.panel { background: #ffffff; border-radius: 16px; padding: 24px; display: grid; gap: 12px; }
+.panel h3 { font-size: 22px; font-weight: 500; color: var(--ink); }
+.panel p, .panel li { font-size: 16px; }
+.panel ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.panel li::marker { color: var(--green); }
+.panel-dark { background: var(--navy); color: #ffffff; }
+.panel-dark h3 { color: #ffffff; }
+.panel-dark li { color: #e8ecee; }
+.panel-dark .eyebrow { font-size: 15px; }
+form.mail { display: grid; gap: 10px; }
+form.mail label { font-size: 16px; font-weight: 600; color: var(--ink); }
+.mail-row { display: flex; gap: 10px; flex-wrap: wrap; }
+input[type="email"] { flex: 1 1 200px; font: inherit; font-size: 16px; padding: 13px 20px; border: 1px solid #c9cbc6; border-radius: 50px; background: #ffffff; color: var(--ink); }
+.status { font-size: 14px; color: var(--muted); min-height: 1.4em; }
+
+/* Sources and footer */
+.sources { padding: 64px 0; }
+.sources ul { margin: 16px 0 0; padding-left: 20px; display: grid; gap: 8px; font-size: 15px; max-width: 86ch; }
+.sources li::marker { color: var(--green); }
+footer { background: var(--navy); color: var(--hero-sub); padding: 36px 0 44px; font-size: 14px; }
+footer .wrap { display: grid; gap: 14px; }
+footer .brand { color: #ffffff; font-size: 20px; }
+footer p { max-width: 86ch; }
+
+@media (max-width: 980px) {
+  .main, .hero .wrap, .cols { grid-template-columns: minmax(0, 1fr); }
+  .card { position: static; }
+  .hero { padding: 52px 0 56px; }
+  .section, .report { padding: 56px 0; }
+}
+@media (max-width: 640px) {
+  .nav { display: none; }
+}
+@media (max-width: 420px) {
+  .wrap { padding: 0 16px; }
+  fieldset.q { padding: 18px; }
+  .score-num { font-size: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="utility">
+  <div class="wrap">
+    <span class="proto-tag"><b>PROTOTYPE</b> Student capstone mockup with a placeholder brand. Not a live page.</span>
+    <span>Credit union edition</span>
+  </div>
+</div>
+
+<header class="site-head">
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="15" style="fill:var(--green)"></circle>
+        <rect x="9" y="9" width="3" height="14" rx="1" style="fill:#ffffff"></rect>
+        <rect x="20" y="9" width="3" height="14" rx="1" style="fill:#ffffff"></rect>
+        <rect x="12" y="12" width="8" height="2.4" style="fill:#ffffff"></rect>
+        <rect x="12" y="18" width="8" height="2.4" style="fill:#ffffff"></rect>
+      </svg>
+      Demo
+    </div>
+    <nav class="nav" aria-label="Placeholder navigation">
+      <span>Platform</span>
+      <span>Solutions</span>
+      <span>Resources</span>
+      <span>Company</span>
+      <a class="btn btn-sm" href="#questions">Start the check</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Network access readiness check</p>
+      <h1>Could you show an examiner every device on your network?</h1>
+      <p class="lead">A 3-minute self-check for credit unions with small IT teams. Answer 10 questions and get a readiness score, your biggest gaps, and the NCUA, FFIEC, NIST or CIS text each gap traces back to.</p>
+      <div class="cta">
+        <a class="btn" href="#questions">Start the check</a>
+        <a class="btn btn-line btn-on-dark" href="#report">See an example report</a>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>10</b><span>questions, about 3 minutes</span></div>
+      <div class="stat"><b>4</b><span>areas, one score out of 100</span></div>
+      <div class="stat"><b>0</b><span>sign-ups needed to see your results</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Self-check</p>
+      <h2 class="h2">Where does your network stand today?</h2>
+      <p>Pick the answer closest to how things work at your branches right now. Your score updates as you go.</p>
+    </div>
+    <div class="main">
+      <div class="questions" id="questions"></div>
+
+      <aside class="card" aria-live="polite" id="card">
+        <div class="card-head">
+          <h2>Readiness score</h2>
+          <span class="pill" id="mode-pill"></span>
+        </div>
+        <div class="score">
+          <span class="score-num" id="score-num">0</span>
+          <span class="score-of">/ 100</span>
+          <span class="pill band" id="band"></span>
+        </div>
+        <p class="basis" id="basis"></p>
+        <div class="areas" id="areas"></div>
+        <div class="topgaps">
+          <h3>Biggest gaps</h3>
+          <ol id="topgaps"></ol>
+        </div>
+        <div class="card-actions">
+          <a class="btn btn-sm" href="#report">See full report</a>
+          <button class="btn btn-sm btn-line btn-on-dark" type="button" id="reset">Start over</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="report" id="report">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Report</p>
+      <h2 class="h2" id="report-title">Your report</h2>
+      <p id="report-sub"></p>
+    </div>
+    <div class="cols">
+      <div class="gaps" id="gaps"></div>
+      <div class="side">
+        <div class="panel" id="fit">
+          <h3>What to look for in a fix</h3>
+          <div id="fit-body"></div>
+        </div>
+        <div class="panel panel-dark">
+          <p class="eyebrow">How Demo helps</p>
+          <ul>
+            <li>One small sensor on each network segment finds every IP device and identifies what it is.</li>
+            <li>Unknown devices can be blocked or isolated without changing switch settings, so mixed switch brands are fine.</li>
+            <li>Built-in RADIUS adds 802.1X when you want it.</li>
+            <li>Run it from the cloud or on your own servers.</li>
+            <li>Export reports for examiners and your board.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <form class="mail" id="mail" novalidate>
+            <label for="email">Email me this report as a PDF</label>
+            <div class="mail-row">
+              <input type="email" id="email" name="email" placeholder="you@yourcu.org" autocomplete="email">
+              <button class="btn btn-sm" type="submit">Send</button>
+            </div>
+          </form>
+          <p class="status" id="mail-status"></p>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-line" type="button" id="copy">Copy summary</button>
+          </div>
+          <p class="status" id="copy-status"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sources">
+  <div class="wrap">
+    <p class="eyebrow">Sources</p>
+    <h2 class="h2">Where the questions come from</h2>
+    <ul>
+      <li><a href="https://www.law.cornell.edu/cfr/text/12/appendix-A_to_part_748">NCUA, 12 CFR Part 748, Appendix A. Guidelines for Safeguarding Member Information</a></li>
+      <li><a href="https://flofr.gov/SitePages/documents/69U100/FFIEC%20Information%20Security.pdf">FFIEC IT Examination Handbook, Information Security booklet (2016), section II.C.9 Network Controls</a></li>
+      <li><a href="https://ncua.gov/regulation-supervision/letters-credit-unions-other-guidance/cyber-incident-notification-requirements">NCUA cyber incident notification requirements</a></li>
+      <li><a href="https://www.nist.gov/document/nist-csf-20-core-withdrawn-csf-11-elements">NIST Cybersecurity Framework 2.0 Core</a></li>
+      <li><a href="https://researchsoc.iu.edu/resources/crosswalks/cis_controls__v8.1_guide__2024_0801.pdf">CIS Critical Security Controls v8.1</a> and <a href="https://controls-assessment-specification.readthedocs.io/en/latest/control-13/control-13.9.html">CIS Safeguard 13.9</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand">Demo</div>
+    <p>"Demo" is a placeholder name used in a student capstone prototype. This page is not affiliated with NCUA, FFIEC, NIST or CIS. The check is educational and does not predict exam or audit results. NCUA's guidelines ask each credit union to decide which measures fit its own risk.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var AREAS = [
+    { id: "see", name: "See what's connected", short: "See" },
+    { id: "control", name: "Control who gets on", short: "Control" },
+    { id: "record", name: "Watch and keep records", short: "Records" },
+    { id: "prove", name: "Prove it", short: "Prove" }
+  ];
+
+  var QUESTIONS = [
+    {
+      id: "inventory", area: "see",
+      text: "Could you produce a current list of every device on your network right now?",
+      hint: "Count printers, cameras, ATMs, badge readers and vendor laptops, not just staff PCs.",
+      options: ["Yes. It updates on its own.", "Yes, but it's a spreadsheet we update by hand.", "Not with confidence."],
+      scores: [2, 1, 0],
+      gap: ["No reliable device list", "Device list depends on manual updates"],
+      why: "Every other control on this page depends on knowing what is plugged in. A hand-kept list drifts out of date between updates.",
+      refs: [
+        ["NIST CSF 2.0 ID.AM-01", "Inventories of hardware managed by the organization are maintained."],
+        ["CIS v8.1 Safeguard 1.1", "Establish and maintain a detailed enterprise asset inventory (Implementation Group 1)."]
+      ]
+    },
+    {
+      id: "newdevice", area: "see",
+      text: "If someone plugged a new device into a branch network jack today, when would you find out?",
+      hint: "",
+      options: ["Within minutes. We'd get an alert.", "Eventually, during a periodic review.", "Probably never."],
+      scores: [2, 1, 0],
+      gap: ["New devices go unnoticed", "New devices are caught late"],
+      why: "FFIEC examination guidance says network monitoring should be set up to catch new devices as they are added.",
+      refs: [
+        ["FFIEC Information Security II.C.9", "“Network monitoring systems should be configured to detect the addition of new devices.”"],
+        ["NIST CSF 2.0 DE.CM-01", "Networks and network services are monitored to find potentially adverse events."]
+      ]
+    },
+    {
+      id: "unknown", area: "control",
+      text: "What happens when an unknown laptop plugs in at a branch?",
+      hint: "",
+      options: ["It's blocked or sent to a restricted network automatically.", "It gets on. We'd remove it by hand once we noticed.", "It gets the same access as a staff PC."],
+      scores: [2, 1, 0],
+      gap: ["Unknown devices get full access", "Unknown devices are removed by hand"],
+      why: "NCUA's safeguarding guidelines ask credit unions to consider access controls that let in only authorized users, and FFIEC guidance names network access control (NAC) as one way to keep unauthorized devices off.",
+      refs: [
+        ["NCUA 12 CFR 748 App. A, III.C.1.a", "Access controls on member information systems that permit access only to authorized individuals."],
+        ["FFIEC Information Security II.C.9", "“Network access control (NAC) systems could prevent the recognition of any unauthorized device.”"],
+        ["CIS v8.1 Safeguard 1.2", "Address unauthorized assets (Implementation Group 1)."]
+      ]
+    },
+    {
+      id: "auth", area: "control",
+      text: "Do staff devices have to prove who they are before they join the network?",
+      hint: "For example with a certificate or a sign-in check, rather than just plugging in a cable.",
+      options: ["Yes. Every device is authenticated.", "Some are, like Wi-Fi, but wired ports are open.", "No. A cable or the Wi-Fi password is enough."],
+      scores: [2, 1, 0],
+      gap: ["Anyone with a cable or the Wi-Fi password gets on", "Wired ports skip authentication"],
+      why: "A shared Wi-Fi password or an open wall jack lets anyone with physical access onto the network.",
+      refs: [
+        ["NIST CSF 2.0 PR.AA-03", "Users, services, and hardware are authenticated."],
+        ["CIS v8.1 Safeguard 13.9", "Deploy port-level access control, such as 802.1X (Implementation Group 3)."]
+      ]
+    },
+    {
+      id: "zones", area: "control",
+      text: "Are guests and vendors kept on a separate network from staff and member systems?",
+      hint: "",
+      options: ["Yes, and the separation is enforced.", "There's a guest Wi-Fi, but vendor laptops plug into the main network.", "No. Everyone shares one network."],
+      scores: [2, 1, 0],
+      gap: ["Guests, vendors and staff share one network", "Vendor devices land on the main network"],
+      why: "FFIEC guidance expects each network zone to have its own security policy, with access limited to what each user needs.",
+      refs: [
+        ["FFIEC Information Security II.C.9", "“Access to zones should be controlled according to the principle of least privilege and segregation of duties.”"],
+        ["NIST CSF 2.0 PR.IR-01", "Networks and environments are protected from unauthorized logical access and usage."]
+      ]
+    },
+    {
+      id: "history", area: "record",
+      text: "Could you tell which devices were on the network last Tuesday at 2 p.m., and where?",
+      hint: "",
+      options: ["Yes. It's in searchable logs.", "Partly. We'd have to piece it together.", "No."],
+      scores: [2, 1, 0],
+      gap: ["No record of who was connected", "Connection history is hard to rebuild"],
+      why: "After an incident you need this history fast. NCUA requires federally insured credit unions to report a reportable cyber incident within 72 hours.",
+      refs: [
+        ["NCUA 12 CFR 748 App. A, III.C.1.f", "Monitoring systems and procedures to detect actual and attempted attacks on or intrusions into member information systems."],
+        ["NCUA cyber incident rule", "Report a reportable cyber incident to NCUA within 72 hours (in effect since September 2023)."]
+      ]
+    },
+    {
+      id: "rogue", area: "record",
+      text: "Do you check for wireless access points or routers that IT didn't install?",
+      hint: "",
+      options: ["Yes, automatically or on a regular schedule.", "Only when something seems off.", "We don't check."],
+      scores: [2, 1, 0],
+      gap: ["Nobody checks for rogue access points", "Rogue access points are checked only ad hoc"],
+      why: "A cheap router plugged in under a desk can open a path around the firewall. FFIEC guidance calls for regular scans.",
+      refs: [
+        ["FFIEC Information Security II.C.9", "Scan the network regularly to detect rogue access points, and consider NAC systems."],
+        ["FFIEC Information Security II.C.9(a)", "“Policies should prohibit installation of wireless access points and gateways without approval.”"]
+      ]
+    },
+    {
+      id: "evidence", area: "prove",
+      text: "If an examiner or auditor asked how you keep unauthorized devices off, what could you show them?",
+      hint: "",
+      options: ["A report or dashboard we can export the same day.", "Policy documents, plus screenshots with some effort.", "Mostly a verbal explanation."],
+      scores: [2, 1, 0],
+      gap: ["Little evidence to show an examiner", "Evidence takes effort to pull together"],
+      why: "NCUA's guidelines ask credit unions to test key controls regularly and report on the security program to the board at least once a year. Ready-made records make both easier.",
+      refs: [
+        ["NCUA 12 CFR 748 App. A, III.C.3", "Regularly test the key controls, systems and procedures of the information security program."],
+        ["NCUA 12 CFR 748 App. A, III.F", "Report to the board or an appropriate committee at least annually."]
+      ]
+    }
+  ];
+
+  var CONTEXT = [
+    {
+      id: "switches",
+      text: "How many switch brands or generations run across your branches?",
+      hint: "Not scored. It changes what kind of fix fits.",
+      options: ["One brand, all current and centrally managed.", "Two or more brands, or some older or unmanaged switches.", "Not sure."],
+      values: ["uniform", "mixed", "unknown"]
+    },
+    {
+      id: "team",
+      text: "Who handles network security day to day?",
+      hint: "Not scored. It changes what kind of fix fits.",
+      options: ["A dedicated security person or team.", "A small IT team that also handles everything else.", "One person, or an outside provider."],
+      values: ["dedicated", "small", "solo"]
+    }
+  ];
+
+  var FIT = {
+    switches: {
+      uniform: "With one current switch brand, the NAC from your switch vendor may be the simplest path. Compare it on license cost and on how much setup each port needs.",
+      mixed: "Your network mixes switch brands or ages. NAC that relies on 802.1X at every port usually means configuring each brand separately and sometimes replacing old switches. An approach that doesn't depend on the switch avoids that work.",
+      unknown: "Start by listing the switches you run. If they turn out to be mixed, NAC that relies on 802.1X at every port will take more setup."
+    },
+    team: {
+      dedicated: "With dedicated security staff you can use more detailed policies. Check how a product works with the tools you already run.",
+      small: "With a small team, favor default policies you can turn on quickly and a console that doesn't need daily tuning.",
+      solo: "With one person or an outside provider, favor a cloud console with nothing to patch, default policies, and a vendor that helps with setup."
+    }
+  };
+
+  // A typical small credit union, shown until the visitor answers anything.
+  var EXAMPLE = { inventory: 1, newdevice: 2, unknown: 1, auth: 1, zones: 1, history: 1, rogue: 2, evidence: 1, switches: 1, team: 2 };
+
+  var answers = {};
+
+  function el(tag, attrs, text) {
+    var n = document.createElement(tag);
+    if (attrs) { for (var k in attrs) { if (attrs[k] !== undefined) n.setAttribute(k, attrs[k]); } }
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function buildQuestion(q, num) {
+    var fs = el("fieldset", { "class": "q", id: "q-" + q.id });
+    var lg = el("legend");
+    lg.appendChild(el("span", { "class": "qn" }, String(num).padStart(2, "0")));
+    lg.appendChild(document.createTextNode(q.text));
+    fs.appendChild(lg);
+    if (q.hint) fs.appendChild(el("p", { "class": "hint" }, q.hint));
+    var opts = el("div", { "class": "opts" });
+    q.options.forEach(function (label, i) {
+      var id = "a-" + q.id + "-" + i;
+      var lab = el("label", { "class": "opt", "for": id });
+      var input = el("input", { type: "radio", name: q.id, id: id, value: String(i) });
+      input.addEventListener("change", function () { answers[q.id] = i; update(); });
+      lab.appendChild(input);
+      lab.appendChild(el("span", { "class": "dot", "aria-hidden": "true" }));
+      lab.appendChild(el("span", null, label));
+      opts.appendChild(lab);
+    });
+    fs.appendChild(opts);
+    return fs;
+  }
+
+  function render() {
+    var root = document.getElementById("questions");
+    var n = 1;
+    AREAS.forEach(function (a, ai) {
+      var sec = el("section", { "class": "area", "aria-labelledby": "h-" + a.id });
+      var head = el("div", { "class": "area-head" });
+      head.appendChild(el("span", { "class": "num" }, "Area " + (ai + 1)));
+      head.appendChild(el("h2", { id: "h-" + a.id }, a.name));
+      sec.appendChild(head);
+      QUESTIONS.filter(function (q) { return q.area === a.id; }).forEach(function (q) {
+        sec.appendChild(buildQuestion(q, n++));
+      });
+      root.appendChild(sec);
+    });
+    var ctx = el("section", { "class": "area", "aria-labelledby": "h-context" });
+    var ch = el("div", { "class": "area-head" });
+    ch.appendChild(el("span", { "class": "num" }, "Context"));
+    ch.appendChild(el("h2", { id: "h-context" }, "About your network"));
+    ctx.appendChild(ch);
+    CONTEXT.forEach(function (q) { ctx.appendChild(buildQuestion(q, n++)); });
+    root.appendChild(ctx);
+  }
+
+  // Pure scoring: returns everything the page shows.
+  function computeReport(ans) {
+    var points = 0, max = 0, answered = 0;
+    var areaStats = {};
+    AREAS.forEach(function (a) { areaStats[a.id] = { points: 0, max: 0, answered: 0, total: 0 }; });
+    var gaps = [];
+    QUESTIONS.forEach(function (q) {
+      var st = areaStats[q.area];
+      st.total += 1;
+      if (ans[q.id] === undefined) return;
+      var s = q.scores[ans[q.id]];
+      points += s; max += 2; answered += 1;
+      st.points += s; st.max += 2; st.answered += 1;
+      if (s < 2) gaps.push({ q: q, score: s, title: q.gap[s] });
+    });
+    gaps.sort(function (a, b) { return a.score - b.score; });
+    var pct = max ? Math.round((points / max) * 100) : 0;
+    var band = pct >= 80 ? "good" : pct >= 50 ? "warn" : "crit";
+    return { points: points, max: max, answered: answered, total: QUESTIONS.length, pct: pct, band: band, areaStats: areaStats, gaps: gaps };
+  }
+
+  var BAND_LABEL = { good: "Solid footing", warn: "Some gaps", crit: "Big gaps" };
+  var BAND_COLOR = { good: "var(--good)", warn: "var(--warn)", crit: "var(--crit)" };
+
+  function current() {
+    var keys = Object.keys(answers);
+    if (keys.length === 0) return { ans: EXAMPLE, example: true };
+    return { ans: answers, example: false };
+  }
+
+  function update() {
+    var c = current();
+    var r = computeReport(c.ans);
+
+    var modePill = document.getElementById("mode-pill");
+    modePill.className = "pill " + (c.example ? "pill-example" : "pill-live");
+    modePill.textContent = c.example ? "EXAMPLE" : "YOUR ANSWERS";
+
+    document.getElementById("score-num").textContent = r.answered ? r.pct : "–";
+    var band = document.getElementById("band");
+    band.className = "pill band band-" + r.band;
+    band.textContent = r.answered ? BAND_LABEL[r.band] : "";
+    band.hidden = !r.answered;
+
+    document.getElementById("basis").textContent = c.example
+      ? "Example answers from a typical small credit union. Answer any question to see your own score."
+      : "Based on " + r.answered + " of " + r.total + " scored questions.";
+
+    var areasEl = document.getElementById("areas");
+    areasEl.textContent = "";
+    AREAS.forEach(function (a) {
+      var st = r.areaStats[a.id];
+      var row = el("div", { "class": "arow" });
+      row.appendChild(el("span", null, a.name));
+      var p = st.max ? Math.round((st.points / st.max) * 100) : null;
+      row.appendChild(el("span", { "class": "aval" }, p === null ? "not answered" : p + "%"));
+      var bar = el("div", { "class": "bar", role: "img", "aria-label": a.name + (p === null ? " not answered" : " " + p + " percent") });
+      var fill = el("span");
+      if (p !== null) {
+        var b = p >= 80 ? "good" : p >= 50 ? "warn" : "crit";
+        fill.style.width = Math.max(p, 3) + "%";
+        fill.style.background = BAND_COLOR[b];
+      } else {
+        fill.style.width = "0";
+      }
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      areasEl.appendChild(row);
+    });
+
+    var top = document.getElementById("topgaps");
+    top.textContent = "";
+    if (r.gaps.length === 0) {
+      top.appendChild(el("li", null, r.answered ? "No gaps in what you've answered so far." : "Answer a question to see gaps."));
+    } else {
+      r.gaps.slice(0, 3).forEach(function (g) { top.appendChild(el("li", null, g.title)); });
+    }
+
+    document.getElementById("report-title").textContent = c.example ? "Example report" : "Your report";
+    document.getElementById("report-sub").textContent = c.example
+      ? "This is what a typical small credit union might see."
+      : r.gaps.length + (r.gaps.length === 1 ? " gap" : " gaps") + " found, most serious first.";
+
+    var gapsEl = document.getElementById("gaps");
+    gapsEl.textContent = "";
+    if (r.gaps.length === 0) {
+      gapsEl.appendChild(el("p", { "class": "empty" }, r.answered
+        ? "Nothing to flag in the questions you've answered. Keep going to check the rest."
+        : "Answer the questions above to build your report."));
+    }
+    r.gaps.forEach(function (g) {
+      var card = el("article", { "class": "gap " + (g.score === 0 ? "crit" : "warn") });
+      var t = el("div", { "class": "gap-top" });
+      t.appendChild(el("h3", null, g.title));
+      t.appendChild(el("span", { "class": "pill " + (g.score === 0 ? "band-crit" : "band-warn") }, g.score === 0 ? "HIGH" : "MEDIUM"));
+      card.appendChild(t);
+      card.appendChild(el("p", { "class": "why" }, g.q.why));
+      var ul = el("ul", { "class": "refs", "aria-label": "Traces to" });
+      g.q.refs.forEach(function (ref) {
+        var li = el("li");
+        li.appendChild(el("span", { "class": "rid" }, ref[0]));
+        li.appendChild(document.createTextNode(ref[1]));
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      gapsEl.appendChild(card);
+    });
+
+    var fitBody = document.getElementById("fit-body");
+    fitBody.textContent = "";
+    var lines = [];
+    CONTEXT.forEach(function (q) {
+      if (c.ans[q.id] !== undefined) lines.push(FIT[q.id][q.values[c.ans[q.id]]]);
+    });
+    if (lines.length === 0) {
+      fitBody.appendChild(el("p", null, "Answer the two questions under About your network to see what kind of fix suits you."));
+    } else {
+      var ul2 = el("ul");
+      lines.forEach(function (l) { ul2.appendChild(el("li", null, l)); });
+      fitBody.appendChild(ul2);
+    }
+  }
+
+  function summaryText() {
+    var c = current();
+    var r = computeReport(c.ans);
+    var out = [];
+    out.push("Network access readiness check" + (c.example ? " (example)" : ""));
+    out.push("Score " + (r.answered ? r.pct + "/100, " + BAND_LABEL[r.band] : "not started") + ", based on " + r.answered + " of " + r.total + " questions");
+    AREAS.forEach(function (a) {
+      var st = r.areaStats[a.id];
+      out.push("- " + a.name + " " + (st.max ? Math.round((st.points / st.max) * 100) + "%" : "not answered"));
+    });
+    if (r.gaps.length) {
+      out.push("Gaps");
+      r.gaps.forEach(function (g) { out.push("- " + g.title + " (" + g.q.refs.map(function (x) { return x[0]; }).join("; ") + ")"); });
+    }
+    return out.join("\n");
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    answers = {};
+    document.querySelectorAll("#questions input[type=radio]").forEach(function (i) { i.checked = false; });
+    update();
+    document.getElementById("questions").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  document.getElementById("mail").addEventListener("submit", function (e) {
+    e.preventDefault();
+    document.getElementById("mail-status").textContent = "This is a prototype, so nothing was sent and your email wasn't saved.";
+  });
+
+  document.getElementById("copy").addEventListener("click", function () {
+    var status = document.getElementById("copy-status");
+    var text = summaryText();
+    try {
+      navigator.clipboard.writeText(text).then(function () {
+        status.textContent = "Summary copied.";
+      }, function () {
+        status.textContent = "Your browser blocked copying here. Try again from the full page view.";
+      });
+    } catch (err) {
+      status.textContent = "Your browser blocked copying here. Try again from the full page view.";
+    }
+  });
+
+  render();
+  update();
+
+  window.__readiness = { computeReport: computeReport, QUESTIONS: QUESTIONS, EXAMPLE: EXAMPLE };
+})();
+</script>
+</body>
+</html>
