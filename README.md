@@ -6,7 +6,7 @@ A clickable prototype of a self-check landing page for credit union IT teams. Vi
 
 ## Live page
 
-[https://taeyunkim03.github.io/cu-readiness-demo/](https://taeyunkim03.github.io/Genians-Capstone/)
+https://taeyunkim03.github.io/Genians-Capstone/
 
 ## What's in here
 
